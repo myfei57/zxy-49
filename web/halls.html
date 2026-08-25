@@ -1,0 +1,66 @@
+{{define "content"}}
+<h1>展馆与展区</h1>
+<div class="panel">
+  <h2>新建展馆</h2>
+  <div class="row">
+    <input id="hall-id" placeholder="展馆 ID">
+    <input id="hall-venue" placeholder="场馆 ID">
+    <input id="hall-name" placeholder="展馆名称">
+    <button onclick="createHall()">创建</button>
+  </div>
+</div>
+<div class="panel">
+  <h2>展馆列表</h2>
+  <table>
+    <thead><tr><th>ID</th><th>场馆</th><th>名称</th><th>展区数</th><th>展位数</th></tr></thead>
+    <tbody id="halls-body"></tbody>
+  </table>
+</div>
+<div class="panel">
+  <h2>展区</h2>
+  <div class="row">
+    <input id="zone-id" placeholder="展区 ID">
+    <input id="zone-hall" placeholder="展馆 ID">
+    <input id="zone-name" placeholder="展区名称">
+    <button onclick="createZone()">创建展区</button>
+  </div>
+  <table>
+    <thead><tr><th>ID</th><th>展馆</th><th>名称</th><th>分区</th></tr></thead>
+    <tbody id="zones-body"></tbody>
+  </table>
+</div>
+<script>
+async function load() {
+  const halls = await (await fetch("/api/halls")).json();
+  const zones = await (await fetch("/api/zones")).json();
+  const booths = await (await fetch("/api/booths")).json();
+  const hallsBody = document.getElementById("halls-body");
+  hallsBody.innerHTML = "";
+  for (const hall of halls) {
+    const zoneCount = zones.filter(z => z.hall_id === hall.id).length;
+    const boothCount = booths.filter(b => b.hall_id === hall.id).length;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${hall.id}</td><td>${hall.venue_id}</td><td>${hall.name}</td><td>${zoneCount}</td><td>${boothCount}</td>`;
+    hallsBody.appendChild(tr);
+  }
+  const zonesBody = document.getElementById("zones-body");
+  zonesBody.innerHTML = "";
+  for (const zone of zones) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${zone.id}</td><td>${zone.hall_id}</td><td>${zone.name}</td><td>${zone.partition}</td>`;
+    zonesBody.appendChild(tr);
+  }
+}
+async function createHall() {
+  const body = { id: document.getElementById("hall-id").value, venue_id: document.getElementById("hall-venue").value, name: document.getElementById("hall-name").value };
+  await fetch("/api/halls", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  load();
+}
+async function createZone() {
+  const body = { id: document.getElementById("zone-id").value, hall_id: document.getElementById("zone-hall").value, name: document.getElementById("zone-name").value };
+  await fetch("/api/zones", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  load();
+}
+load();
+</script>
+{{end}}
