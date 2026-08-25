@@ -1,0 +1,59 @@
+{{define "content"}}
+<h1>巡更路线</h1>
+<div class="panel">
+  <h2>新建路线</h2>
+  <div class="row">
+    <input id="route-id" placeholder="路线 ID">
+    <input id="route-zone" placeholder="展区 ID">
+    <input id="route-name" placeholder="路线名称">
+    <button onclick="createRoute()">创建</button>
+  </div>
+</div>
+<div class="panel">
+  <h2>路线列表</h2>
+  <table>
+    <thead><tr><th>ID</th><th>展区</th><th>名称</th><th>打卡点</th><th>操作</th></tr></thead>
+    <tbody id="routes-body"></tbody>
+  </table>
+</div>
+<div class="panel">
+  <h2>打卡</h2>
+  <div class="row">
+    <input id="checkin-route" placeholder="路线 ID">
+    <input id="checkin-booth" placeholder="展位 ID">
+    <button onclick="checkIn()">打卡</button>
+    <button class="secondary" onclick="rebuild()">重建路线</button>
+  </div>
+</div>
+<script>
+async function load() {
+  const routes = await (await fetch("/api/guards/routes")).json();
+  const body = document.getElementById("routes-body");
+  body.innerHTML = "";
+  for (const route of routes) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${route.id}</td><td>${route.zone_id}</td><td>${route.name}</td><td>${route.checkpoints.length}</td><td><button onclick="checkInFor('${route.id}')">打卡</button></td>`;
+    body.appendChild(tr);
+  }
+}
+async function createRoute() {
+  const body = { id: document.getElementById("route-id").value, zone_id: document.getElementById("route-zone").value, name: document.getElementById("route-name").value };
+  await fetch("/api/guards/routes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  load();
+}
+async function checkIn() {
+  const body = { booth_id: document.getElementById("checkin-booth").value };
+  await fetch("/api/guards/routes/" + document.getElementById("checkin-route").value + "/checkin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  load();
+}
+async function checkInFor(id) {
+  await fetch("/api/guards/routes/" + id + "/checkin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ booth_id: document.getElementById("checkin-booth").value }) });
+  load();
+}
+async function rebuild() {
+  const id = document.getElementById("checkin-route").value;
+  if (id) { await fetch("/api/guards/routes/" + id + "/rebuild", { method: "POST" }); load(); }
+}
+load();
+</script>
+{{end}}
