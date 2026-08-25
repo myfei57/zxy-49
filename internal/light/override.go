@@ -19,10 +19,10 @@ func (s *Service) Evacuate(hallID string, at int64) error {
 		return err
 	}
 	for _, zoneID := range zones {
-		var existing domain.Scene
-		if err := s.store.Load(store.EffectiveSceneKeyFor(zoneID), &existing); err == nil {
-			continue
-		}
+		// Evacuation has the highest priority: it must overwrite whatever
+		// effective scene a prior scheduled run (e.g. the hourly 布展 scene)
+		// may have left on the zone, so emergency lighting takes effect at
+		// once instead of being skipped.
 		scene := domain.Scene{
 			ZoneID:      zoneID,
 			Name:        "emergency",
