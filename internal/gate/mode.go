@@ -21,12 +21,14 @@ func (s *Service) SetMode(id string, mode string, at int64) error {
 	if gate.Mode == mode {
 		return nil
 	}
+	// 先落盘持久模式日志（闸机恢复时读取的权威来源），再写闸机实时状态。
+	// 反过来写一旦闪断落在两步之间，日志仍是旧模式，恢复后闸机会回退到布防。
+	if err := s.store.SaveGateMode(id, mode, at); err != nil {
+		return err
+	}
 	gate.Mode = mode
 	gate.Released = mode == "pass"
 	if err := s.store.Save(store.GateStoreKey(id), gate); err != nil {
-		return err
-	}
-	if err := s.store.SaveGateMode(id, mode, at); err != nil {
 		return err
 	}
 	return s.audit.Record("gate.mode", id, mode, at)
