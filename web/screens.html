@@ -1,0 +1,66 @@
+{{define "content"}}
+<h1>大屏播控</h1>
+<div class="panel">
+  <h2>新建大屏</h2>
+  <div class="row">
+    <input id="screen-id" placeholder="大屏 ID">
+    <input id="screen-name" placeholder="大屏名称">
+    <button onclick="createScreen()">创建</button>
+  </div>
+</div>
+<div class="panel">
+  <h2>大屏列表</h2>
+  <table>
+    <thead><tr><th>ID</th><th>名称</th><th>当前片段</th><th>操作</th></tr></thead>
+    <tbody id="screens-body"></tbody>
+  </table>
+</div>
+<div class="panel">
+  <h2>设置播放列表</h2>
+  <div class="row">
+    <input id="pl-screen" placeholder="大屏 ID">
+    <input id="pl-clips" placeholder="片段名,以逗号分隔">
+    <button onclick="setPlaylist()">保存列表</button>
+    <button class="secondary" onclick="tickScreen()">播放下一条</button>
+    <button class="secondary" onclick="resetScreen()">复位</button>
+  </div>
+</div>
+<script>
+async function load() {
+  const screens = await (await fetch("/api/screens")).json();
+  const body = document.getElementById("screens-body");
+  body.innerHTML = "";
+  for (const screen of screens) {
+    let clip = "";
+    try {
+      const current = await (await fetch("/api/screens/" + screen.id + "/current")).json();
+      clip = current.name || "";
+    } catch (e) { clip = "-"; }
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${screen.id}</td><td>${screen.name}</td><td>${clip}</td><td><button onclick="tick('${screen.id}')">tick</button></td>`;
+    body.appendChild(tr);
+  }
+}
+async function createScreen() {
+  const body = { id: document.getElementById("screen-id").value, name: document.getElementById("screen-name").value };
+  await fetch("/api/screens", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  load();
+}
+async function setPlaylist() {
+  const names = document.getElementById("pl-clips").value.split(",").filter(Boolean);
+  const clips = names.map((name, i) => ({ id: "c-" + i, name, sponsor: "sponsor", duration_sec: 30 }));
+  await fetch("/api/screens/" + document.getElementById("pl-screen").value + "/playlist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clips }) });
+  load();
+}
+async function tick(id) { await fetch("/api/screens/" + id + "/tick", { method: "POST" }); load(); }
+async function tickScreen() {
+  const id = document.getElementById("pl-screen").value;
+  if (id) { await tick(id); }
+}
+async function resetScreen() {
+  const id = document.getElementById("pl-screen").value;
+  if (id) { await fetch("/api/screens/" + id + "/reset", { method: "POST" }); load(); }
+}
+load();
+</script>
+{{end}}

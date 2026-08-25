@@ -1,0 +1,55 @@
+{{define "content"}}
+<h1>灯光场景</h1>
+<div class="panel">
+  <h2>设置场景</h2>
+  <div class="row">
+    <input id="scene-zone" placeholder="展区 ID">
+    <input id="scene-name" placeholder="场景名称">
+    <input id="scene-brightness" placeholder="亮度 0-100" type="number">
+    <input id="scene-color" placeholder="色温">
+    <button onclick="setScene()">保存场景</button>
+  </div>
+</div>
+<div class="panel">
+  <h2>疏散覆盖</h2>
+  <div class="row">
+    <input id="evac-hall" placeholder="展馆 ID">
+    <button onclick="evacuate(true)">启动疏散</button>
+    <button class="secondary" onclick="evacuate(false)">解除疏散</button>
+  </div>
+</div>
+<div class="panel">
+  <h2>场景列表</h2>
+  <table>
+    <thead><tr><th>展区</th><th>场景</th><th>亮度</th><th>色温</th></tr></thead>
+    <tbody id="scenes-body"></tbody>
+  </table>
+</div>
+<script>
+async function load() {
+  const scenes = await (await fetch("/api/lights/scenes")).json();
+  const body = document.getElementById("scenes-body");
+  body.innerHTML = "";
+  for (const scene of scenes) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${scene.zone_id}</td><td>${scene.name}</td><td>${scene.brightness}</td><td>${scene.color}</td>`;
+    body.appendChild(tr);
+  }
+}
+async function setScene() {
+  const body = {
+    zone_id: document.getElementById("scene-zone").value,
+    name: document.getElementById("scene-name").value,
+    brightness: Number(document.getElementById("scene-brightness").value),
+    color: document.getElementById("scene-color").value
+  };
+  await fetch("/api/lights/scenes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  load();
+}
+async function evacuate(active) {
+  const body = { hall_id: document.getElementById("evac-hall").value, active };
+  await fetch("/api/lights/evacuate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+}
+load();
+</script>
+{{end}}
