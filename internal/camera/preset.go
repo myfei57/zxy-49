@@ -43,8 +43,14 @@ func (s *Service) RefreshPresets(id string, at int64) error {
 		camera.Presets = map[string]domain.Preset{}
 	}
 	for _, boothID := range boothIDs {
+		position, ok := s.hall.BoothPosition(camera.HallID, boothID)
+		if !ok {
+			continue
+		}
 		preset := camera.Presets[boothID]
 		preset.BoothID = boothID
+		preset.X = position.X
+		preset.Y = position.Y
 		camera.Presets[boothID] = preset
 	}
 	return s.store.Save(store.CameraStoreKey(id), camera)
