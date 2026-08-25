@@ -37,7 +37,7 @@ func (s *Service) Tick(id string, now time.Time) (domain.Clip, error) {
 			return domain.Clip{}, err
 		}
 	}
-	next := now.Minute() % len(clips)
+	next := (position.Position + 1) % len(clips)
 	epoch := position.Epoch + 1
 	if err := s.store.SavePosition(id, next, epoch); err != nil {
 		return domain.Clip{}, err
