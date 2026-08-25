@@ -12,11 +12,11 @@ func (s *Service) PowerOn(id string) error {
 	if booth.Powered {
 		return nil
 	}
-	booth.Powered = true
-	if err := s.store.Save(store.BoothStoreKey(id), booth); err != nil {
+	if err := s.quotaS.Reserve(booth.HallID, booth.LoadWatts); err != nil {
 		return err
 	}
-	return s.quotaS.Reserve(booth.HallID, booth.LoadWatts)
+	booth.Powered = true
+	return s.store.Save(store.BoothStoreKey(id), booth)
 }
 
 func (s *Service) PowerOff(id string) error {
